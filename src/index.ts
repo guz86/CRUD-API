@@ -41,7 +41,6 @@ const getUserById = (res: http.ServerResponse, userId: string) => {
     }
 
     const user = users.find((u) => u.id === userId);
-
     if (!user) {
         sendResponse(res, 404, { message: `User with id ${userId} not found.` });
     } else {
@@ -49,29 +48,32 @@ const getUserById = (res: http.ServerResponse, userId: string) => {
     }
 };
 
-const createUser = (res: http.ServerResponse, body: CreateUserRequest) => {
-    const { name, age, hobbies } = body;
+const validateUserData = (data: CreateUserRequest): boolean => {
+    const { name, age, hobbies } = data;
 
     if (typeof name !== 'string' || name.trim() === '') {
-        sendResponse(res, 400, { message: 'Field "name" is required and must be a non-empty string.' });
-        return;
+        return false;
     }
-
     if (typeof age !== 'number' || Number.isNaN(age)) {
-        sendResponse(res, 400, { message: 'Field "age" is required and must be a number.' });
-        return;
+        return false;
     }
-
     if (!Array.isArray(hobbies) || !hobbies.every(hobby => typeof hobby === 'string')) {
-        sendResponse(res, 400, { message: 'Field "hobbies" is required and must be an array of strings.' });
+        return false;
+    }
+    return true;
+};
+
+const createUser = (res: http.ServerResponse, body: CreateUserRequest) => {
+    if (!validateUserData(body)) {
+        sendResponse(res, 400, { message: 'Invalid user data.' });
         return;
     }
 
     const newUser: User = {
         id: uuidv4(),
-        name,
-        age,
-        hobbies,
+        name: body.name,
+        age: body.age,
+        hobbies: body.hobbies,
     };
 
     users.push(newUser);
@@ -85,7 +87,6 @@ const updateUser = (res: http.ServerResponse, userId: string, body: Partial<Crea
     }
 
     const userIndex = users.findIndex((u) => u.id === userId);
-
     if (userIndex === -1) {
         sendResponse(res, 404, { message: `User with id ${userId} not found.` });
         return;
@@ -100,6 +101,22 @@ const updateUser = (res: http.ServerResponse, userId: string, body: Partial<Crea
     sendResponse(res, 200, updatedUser);
 };
 
+const parseRequestBody = (req: http.IncomingMessage, res: http.ServerResponse, callback: (body: any) => void) => {
+    let body = '';
+    req.on('data', chunk => {
+        body += chunk.toString();
+    });
+
+    req.on('end', () => {
+        try {
+            const parsedBody = JSON.parse(body);
+            callback(parsedBody);
+        } catch (error) {
+            sendResponse(res, 400, { message: 'Invalid JSON format.' });
+        }
+    });
+};
+
 const requestListener = (req: http.IncomingMessage, res: http.ServerResponse) => {
     const urlParts = req.url?.split('/').filter(Boolean);
     const method = req.method;
@@ -111,36 +128,10 @@ const requestListener = (req: http.IncomingMessage, res: http.ServerResponse) =>
             const userId = urlParts[2];
             getUserById(res, userId);
         } else if (method === 'POST' && urlParts.length === 2) {
-            let body = '';
-
-            req.on('data', chunk => {
-                body += chunk.toString();
-            });
-
-            req.on('end', () => {
-                try {
-                    const parsedBody: CreateUserRequest = JSON.parse(body);
-                    createUser(res, parsedBody);
-                } catch (error) {
-                    sendResponse(res, 400, { message: 'Invalid JSON format.' });
-                }
-            });
+            parseRequestBody(req, res, (parsedBody: CreateUserRequest) => createUser(res, parsedBody));
         } else if (method === 'PUT' && urlParts.length === 3) {
             const userId = urlParts[2];
-            let body = '';
-
-            req.on('data', chunk => {
-                body += chunk.toString();
-            });
-
-            req.on('end', () => {
-                try {
-                    const parsedBody: Partial<CreateUserRequest> = JSON.parse(body);
-                    updateUser(res, userId, parsedBody);
-                } catch (error) {
-                    sendResponse(res, 400, { message: 'Invalid JSON format.' });
-                }
-            });
+            parseRequestBody(req, res, (parsedBody: Partial<CreateUserRequest>) => updateUser(res, userId, parsedBody));
         } else {
             sendResponse(res, 404, { message: 'Endpoint not found.' });
         }
@@ -150,7 +141,6 @@ const requestListener = (req: http.IncomingMessage, res: http.ServerResponse) =>
 };
 
 const server = http.createServer(requestListener);
-
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
