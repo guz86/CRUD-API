@@ -78,6 +78,28 @@ const createUser = (res: http.ServerResponse, body: CreateUserRequest) => {
     sendResponse(res, 201, newUser);
 };
 
+const updateUser = (res: http.ServerResponse, userId: string, body: Partial<CreateUserRequest>) => {
+    if (!isValidUUID(userId)) {
+        sendResponse(res, 400, { message: 'Invalid userId format.' });
+        return;
+    }
+
+    const userIndex = users.findIndex((u) => u.id === userId);
+
+    if (userIndex === -1) {
+        sendResponse(res, 404, { message: `User with id ${userId} not found.` });
+        return;
+    }
+
+    const updatedUser: User = {
+        ...users[userIndex],
+        ...body,
+    };
+
+    users[userIndex] = updatedUser;
+    sendResponse(res, 200, updatedUser);
+};
+
 const requestListener = (req: http.IncomingMessage, res: http.ServerResponse) => {
     const urlParts = req.url?.split('/').filter(Boolean);
     const method = req.method;
@@ -99,6 +121,22 @@ const requestListener = (req: http.IncomingMessage, res: http.ServerResponse) =>
                 try {
                     const parsedBody: CreateUserRequest = JSON.parse(body);
                     createUser(res, parsedBody);
+                } catch (error) {
+                    sendResponse(res, 400, { message: 'Invalid JSON format.' });
+                }
+            });
+        } else if (method === 'PUT' && urlParts.length === 3) {
+            const userId = urlParts[2];
+            let body = '';
+
+            req.on('data', chunk => {
+                body += chunk.toString();
+            });
+
+            req.on('end', () => {
+                try {
+                    const parsedBody: Partial<CreateUserRequest> = JSON.parse(body);
+                    updateUser(res, userId, parsedBody);
                 } catch (error) {
                     sendResponse(res, 400, { message: 'Invalid JSON format.' });
                 }
