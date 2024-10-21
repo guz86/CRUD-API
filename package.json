@@ -6,6 +6,7 @@
   "scripts": {
     "start:dev": "nodemon ./src/index.ts",
     "start:prod": "tsc; node dist/index.js",
+    "start:multi": "ts-node src/index.ts",
     "build": "webpack",
     "prettier-format": "prettier --config .prettierrc src/**/*.ts --write",
     "test": "jest --silent"
