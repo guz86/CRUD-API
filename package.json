@@ -1,0 +1,11 @@
+{
+  "name": "crud",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./src/index.ts",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "Gordienko Pavel",
+  "license": "ISC"
+}
