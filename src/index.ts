@@ -137,25 +137,30 @@ const requestListener = (req: http.IncomingMessage, res: http.ServerResponse) =>
     const urlParts = req.url?.split('/').filter(Boolean);
     const method = req.method;
 
-    if (urlParts && urlParts[0] === 'api' && urlParts[1] === 'users') {
-        if (method === 'GET' && urlParts.length === 2) {
-            getAllUsers(res);
-        } else if (method === 'GET' && urlParts.length === 3) {
-            const userId = urlParts[2];
-            getUserById(res, userId);
-        } else if (method === 'POST' && urlParts.length === 2) {
-            parseRequestBody(req, res, (parsedBody: CreateUserRequest) => createUser(res, parsedBody));
-        } else if (method === 'PUT' && urlParts.length === 3) {
-            const userId = urlParts[2];
-            parseRequestBody(req, res, (parsedBody: Partial<CreateUserRequest>) => updateUser(res, userId, parsedBody));
-        } else if (method === 'DELETE' && urlParts.length === 3) {
-            const userId = urlParts[2];
-            deleteUser(res, userId);
+    try {
+        if (urlParts && urlParts[0] === 'api' && urlParts[1] === 'users') {
+            if (method === 'GET' && urlParts.length === 2) {
+                getAllUsers(res);
+            } else if (method === 'GET' && urlParts.length === 3) {
+                const userId = urlParts[2];
+                getUserById(res, userId);
+            } else if (method === 'POST' && urlParts.length === 2) {
+                parseRequestBody(req, res, (parsedBody: CreateUserRequest) => createUser(res, parsedBody));
+            } else if (method === 'PUT' && urlParts.length === 3) {
+                const userId = urlParts[2];
+                parseRequestBody(req, res, (parsedBody: Partial<CreateUserRequest>) => updateUser(res, userId, parsedBody));
+            } else if (method === 'DELETE' && urlParts.length === 3) {
+                const userId = urlParts[2];
+                deleteUser(res, userId);
+            } else {
+                sendResponse(res, 404, { message: 'Endpoint not found.' });
+            }
         } else {
-            sendResponse(res, 404, { message: 'Endpoint not found.' });
+            sendResponse(res, 404, { message: 'Resource not found.' });
         }
-    } else {
-        sendResponse(res, 404, { message: 'Resource not found.' });
+    } catch (error) {
+        console.error('Internal server error:', error);
+        sendResponse(res, 500, { message: 'An unexpected error occurred. Please try again later.' });
     }
 };
 
