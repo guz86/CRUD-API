@@ -101,6 +101,22 @@ const updateUser = (res: http.ServerResponse, userId: string, body: Partial<Crea
     sendResponse(res, 200, updatedUser);
 };
 
+const deleteUser = (res: http.ServerResponse, userId: string) => {
+    if (!isValidUUID(userId)) {
+        sendResponse(res, 400, { message: 'Invalid userId format.' });
+        return;
+    }
+
+    const userIndex = users.findIndex((u) => u.id === userId);
+    if (userIndex === -1) {
+        sendResponse(res, 404, { message: `User with id ${userId} not found.` });
+        return;
+    }
+
+    users.splice(userIndex, 1);
+    sendResponse(res, 204, {});
+};
+
 const parseRequestBody = (req: http.IncomingMessage, res: http.ServerResponse, callback: (body: any) => void) => {
     let body = '';
     req.on('data', chunk => {
@@ -132,6 +148,9 @@ const requestListener = (req: http.IncomingMessage, res: http.ServerResponse) =>
         } else if (method === 'PUT' && urlParts.length === 3) {
             const userId = urlParts[2];
             parseRequestBody(req, res, (parsedBody: Partial<CreateUserRequest>) => updateUser(res, userId, parsedBody));
+        } else if (method === 'DELETE' && urlParts.length === 3) {
+            const userId = urlParts[2];
+            deleteUser(res, userId);
         } else {
             sendResponse(res, 404, { message: 'Endpoint not found.' });
         }
