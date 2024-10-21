@@ -4,8 +4,30 @@
   "description": "",
   "main": "./src/index.ts",
   "scripts": {
-    "test": "jest"
+    "start:dev": "nodemon ./src/index.ts",
+    "start:prod": "webpack && node ./dist/index.js",
+    "build": "webpack",
+    "prettier-format": "prettier --config .prettierrc src/**/*.ts --write",
+    "test": "jest --silent"
   },
   "author": "Gordienko Pavel",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.13",
+    "@types/node": "^22.7.7",
+    "@types/uuid": "^10.0.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.7",
+    "prettier": "^3.3.3",
+    "ts-jest": "^29.2.5",
+    "ts-loader": "^9.5.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  }
 }
